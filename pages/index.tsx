@@ -3,61 +3,102 @@ import { useRouter } from 'next/router'
 import { useEffect, useState, useCallback } from 'react'
 import Head from 'next/head'
 
-type Course = 'gda' | 'ibm' | 'py' | 'gen' | 'notion'
+type Course = 'gda' | 'ibm' | 'py' | 'gen'
 type Rating = 'easy' | 'hard' | 'again'
 interface Card { course: Course; q: string; a: string }
 interface Scores { easy: number; hard: number; again: number }
 
 const STARTER: Card[] = [
-  // Google Data Analytics
-  { course: 'gda', q: 'What are the 6 phases of the data analysis process?', a: '<strong>Ask → Prepare → Process → Analyze → Share → Act.</strong> Each phase builds on the previous: Ask defines the problem, Prepare gathers data, Process cleans it, Analyze finds patterns, Share communicates insights, Act implements decisions.' },
-  { course: 'gda', q: 'What is the difference between structured and unstructured data?', a: '<strong>Structured data</strong> is organized in rows and columns (like spreadsheets or databases). <strong>Unstructured data</strong> has no predefined format — emails, images, videos, and social media posts are examples.' },
-  { course: 'gda', q: 'What does SMART stand for in data analysis questions?', a: '<strong>S</strong>pecific, <strong>M</strong>easurable, <strong>A</strong>ction-oriented, <strong>R</strong>elevant, <strong>T</strong>ime-bound. SMART questions help analysts stay focused and lead to useful, actionable insights.' },
-  { course: 'gda', q: 'What is data bias and why does it matter?', a: 'Data bias is when data is collected in a way that skews results. It matters because biased data leads to <strong>wrong conclusions</strong>. Common types: sampling bias, observer bias, confirmation bias.' },
-  { course: 'gda', q: 'What is the difference between a metric and a dimension?', a: '<strong>Metrics</strong> are measurable, quantitative values (sales revenue, click rate). <strong>Dimensions</strong> are qualitative attributes used to categorize data (country, product category, date). Dimensions slice; metrics measure.' },
-  { course: 'gda', q: 'What is data integrity?', a: 'Data integrity means data is <strong>accurate, complete, consistent, and trustworthy</strong> throughout its lifecycle. Without integrity, analysis results cannot be relied upon for decisions.' },
-  // IBM Data Analyst
-  { course: 'ibm', q: 'What is the difference between a data analyst and a data scientist?', a: 'A <strong>data analyst</strong> focuses on interpreting existing data to answer business questions. A <strong>data scientist</strong> builds predictive models and works with more complex algorithms. Analysts describe; scientists predict.' },
-  { course: 'ibm', q: 'What is SQL and what are its four main operations?', a: '<strong>SQL</strong> (Structured Query Language) manages relational databases. The four main operations are <strong>SELECT</strong> (read), <strong>INSERT</strong> (create), <strong>UPDATE</strong> (modify), <strong>DELETE</strong> (remove) — together called CRUD.' },
-  { course: 'ibm', q: 'What is the purpose of a JOIN in SQL?', a: 'A <strong>JOIN</strong> combines rows from two or more tables based on a related column. Types: <strong>INNER JOIN</strong> (matching rows only), <strong>LEFT JOIN</strong> (all left + matching right), <strong>RIGHT JOIN</strong>, <strong>FULL OUTER JOIN</strong>.' },
-  { course: 'ibm', q: 'What is a primary key vs a foreign key?', a: 'A <strong>primary key</strong> uniquely identifies each row in a table (no duplicates, no nulls). A <strong>foreign key</strong> in one table references the primary key of another table, creating a relationship between them.' },
-  { course: 'ibm', q: 'What does ETL stand for in data work?', a: '<strong>Extract, Transform, Load.</strong> ETL is the process of pulling data from source systems, cleaning/transforming it into the right format, and loading it into a data warehouse or database for analysis.' },
-  // Python for Everybody
-  { course: 'py', q: 'What is the difference between a list and a tuple in Python?', a: 'A <strong>list</strong> is mutable (can be changed): <code>[ ]</code>. A <strong>tuple</strong> is immutable (cannot be changed): <code>( )</code>. Use tuples for fixed data that should not be modified, like coordinates.' },
-  { course: 'py', q: 'What does len() do in Python?', a: '<code>len()</code> returns the <strong>number of items</strong> in an object. Works on strings, lists, tuples, dictionaries, and more. Example: <code>len("hello")</code> returns <strong>5</strong>.' },
-  { course: 'py', q: 'What is a for loop and how does it work in Python?', a: 'A <strong>for loop</strong> iterates over a sequence. Example: <code>for item in my_list:</code> runs the indented block once for each item. Use <code>range(n)</code> to loop n times.' },
-  { course: 'py', q: 'What is a dictionary in Python?', a: 'A <strong>dictionary</strong> stores key-value pairs: <code>{"name": "Lucas", "age": 30}</code>. Keys must be unique. Access values with <code>dict["key"]</code>. Very useful for structured data.' },
-  { course: 'py', q: 'What does the import statement do?', a: '<code>import</code> brings in external <strong>libraries/modules</strong> so you can use their functions. Example: <code>import pandas as pd</code> lets you use pandas functions as <code>pd.read_csv()</code>.' },
-  { course: 'py', q: 'What is pandas used for in Python?', a: '<strong>Pandas</strong> is a library for data manipulation and analysis. Key objects: <code>DataFrame</code> (table), <code>Series</code> (column). Common operations: reading CSV, filtering rows, grouping, merging datasets.' },
-  // General Knowledge
-  { course: 'gen', q: 'What is the difference between RAM and storage?', a: '<strong>RAM (Random Access Memory)</strong> is temporary memory your computer uses while running programs — it clears when powered off. <strong>Storage</strong> (SSD/HDD) is permanent memory that holds your files and OS even when off.' },
-  { course: 'gen', q: 'What is an API?', a: 'An <strong>API (Application Programming Interface)</strong> is a set of rules that lets two applications talk to each other. Example: when a weather app fetches forecast data, it uses a weather service\'s API behind the scenes.' },
-  { course: 'gen', q: 'What is the difference between the internet and the web?', a: 'The <strong>internet</strong> is the global network infrastructure connecting billions of devices. The <strong>web (World Wide Web)</strong> is one service that runs on the internet — the system of websites accessed via browsers.' },
-  { course: 'gen', q: 'What is machine learning in simple terms?', a: '<strong>Machine learning</strong> is a type of AI where computers learn patterns from data instead of being explicitly programmed with rules. Example: a spam filter learns what spam looks like from millions of email examples.' },
-  { course: 'gen', q: 'What is version control and why is it important?', a: '<strong>Version control</strong> (e.g. Git) tracks every change made to code over time. It lets developers revert mistakes, work on separate features in parallel, and collaborate without overwriting each other\'s work.' },
-  { course: 'gen', q: 'What is the difference between a compiler and an interpreter?', a: 'A <strong>compiler</strong> translates all source code to machine code before running (e.g. C++). An <strong>interpreter</strong> executes code line by line at runtime (e.g. Python). Compiled programs are faster; interpreted ones are more flexible.' },
-  { course: 'gen', q: 'What is Big O notation?', a: '<strong>Big O notation</strong> describes how an algorithm\'s runtime or space grows as input size increases. <strong>O(1)</strong> = constant, <strong>O(n)</strong> = linear, <strong>O(n²)</strong> = quadratic. It helps compare algorithm efficiency.' },
-  { course: 'gen', q: 'What is the difference between a relational and non-relational database?', a: '<strong>Relational (SQL)</strong> stores data in structured tables with fixed schemas — great for complex queries. <strong>Non-relational (NoSQL)</strong> stores flexible data (documents, key-value pairs) — great for scale and unstructured data.' },
-  { course: 'gen', q: 'What does CPU stand for and what does it do?', a: '<strong>CPU (Central Processing Unit)</strong> is the brain of a computer — it executes all program instructions. Speed is measured in GHz. More cores allow better multitasking. The GPU handles graphics and parallel computing separately.' },
-  { course: 'gen', q: 'What is open source software?', a: '<strong>Open source software</strong> has publicly available source code that anyone can view, modify, and distribute. Examples: Linux, Python, React, VS Code. The opposite is <strong>proprietary/closed source</strong> software like Windows or Photoshop.' },
-  { course: 'gen', q: 'What is the difference between frontend and backend development?', a: '<strong>Frontend</strong> is everything the user sees and interacts with (HTML, CSS, JavaScript, React). <strong>Backend</strong> is the server-side logic, databases, and APIs that the frontend calls. Full-stack developers work on both.' },
-  { course: 'gen', q: 'What is cloud computing?', a: '<strong>Cloud computing</strong> means using servers, storage, and services hosted on the internet instead of your local machine. Providers like AWS, Google Cloud, and Azure let you rent computing power and only pay for what you use.' },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // GOOGLE DATA ANALYTICS
+  // ─────────────────────────────────────────────────────────────────────────
+  { course: 'gda', q: 'What are the 6 phases of the data analysis process?', a: '<strong>Ask → Prepare → Process → Analyze → Share → Act.</strong> Ask defines the problem, Prepare gathers data, Process cleans it, Analyze finds patterns, Share communicates insights, Act implements decisions based on those insights.' },
+  { course: 'gda', q: 'What is the difference between structured and unstructured data?', a: '<strong>Structured data</strong> is organized in rows and columns (spreadsheets, databases). <strong>Unstructured data</strong> has no predefined format — emails, images, videos, and social media posts are examples. Most real-world data is unstructured.' },
+  { course: 'gda', q: 'What does SMART stand for in data analysis questions?', a: '<strong>S</strong>pecific, <strong>M</strong>easurable, <strong>A</strong>ction-oriented, <strong>R</strong>elevant, <strong>T</strong>ime-bound. SMART questions guide analysts toward focused, answerable questions that lead to actionable insights.' },
+  { course: 'gda', q: 'What is data bias and name three common types?', a: '<strong>Data bias</strong> is a systematic error that skews analysis results. Three types: <strong>Sampling bias</strong> (non-representative sample), <strong>Observer bias</strong> (analyst assumptions affect interpretation), <strong>Confirmation bias</strong> (only seeking data that confirms existing beliefs).' },
+  { course: 'gda', q: 'What is the difference between a metric and a dimension?', a: '<strong>Metrics</strong> are measurable quantitative values — sales revenue, click rate, conversion percentage. <strong>Dimensions</strong> are qualitative attributes used to categorize — country, product name, date. Dimensions slice data; metrics measure it.' },
+  { course: 'gda', q: 'What is data integrity and why does it matter?', a: '<strong>Data integrity</strong> means data is accurate, complete, consistent, and trustworthy throughout its lifecycle. Without it, analysis produces unreliable conclusions. Integrity is threatened by entry errors, transfer issues, or system failures.' },
+  { course: 'gda', q: 'What is the difference between quantitative and qualitative data?', a: '<strong>Quantitative data</strong> is numerical and measurable — age, revenue, temperature. <strong>Qualitative data</strong> is descriptive and non-numerical — customer reviews, interview responses, colors. Both types serve different analytical purposes.' },
+  { course: 'gda', q: 'What is a data type mismatch and why is it a problem?', a: 'A <strong>data type mismatch</strong> occurs when data is stored or processed in the wrong format — e.g. a date stored as text. It causes errors in calculations, sorting, and filtering, leading to incorrect results or broken formulas.' },
+  { course: 'gda', q: 'What is the difference between wide data and long data?', a: '<strong>Wide data</strong> has many columns — each variable gets its own column (spreadsheet style). <strong>Long data</strong> has fewer columns but more rows — multiple rows per subject, with variable names in one column and values in another. Long format is preferred for most analysis tools.' },
+  { course: 'gda', q: 'What is a data pipeline?', a: 'A <strong>data pipeline</strong> is an automated series of steps that moves and transforms data from source systems to a destination for analysis. It handles ingestion, cleaning, transformation, and loading — ensuring data is consistently available and ready for use.' },
+  { course: 'gda', q: 'What is the purpose of data cleaning?', a: '<strong>Data cleaning</strong> fixes or removes inaccurate, incomplete, duplicate, or improperly formatted data. It is essential because dirty data leads to unreliable analysis. Common tasks include handling null values, fixing typos, removing duplicates, and standardizing formats.' },
+  { course: 'gda', q: 'What is an outlier and how should you handle it?', a: 'An <strong>outlier</strong> is a data point that differs significantly from others. Handling depends on context: investigate the cause first — it may be a data error (remove it) or a genuinely extreme value (keep it). Never remove outliers without understanding why they exist.' },
+  { course: 'gda', q: 'What is a pivot table and what is it used for?', a: 'A <strong>pivot table</strong> is a data summarization tool that lets you reorganize and aggregate data dynamically. You can group rows, calculate totals, averages, or counts, and change the layout interactively — ideal for exploring large datasets quickly.' },
+  { course: 'gda', q: 'What is the difference between data verification and data validation?', a: '<strong>Data validation</strong> checks that data meets defined rules before entry (e.g. only accept values 1–5). <strong>Data verification</strong> checks that data was transferred or processed correctly. Validation prevents bad data entering; verification confirms data integrity after processing.' },
+  { course: 'gda', q: 'What is a data dictionary?', a: 'A <strong>data dictionary</strong> is a reference document that defines the structure, format, and meaning of each field in a dataset. It describes column names, data types, allowed values, and relationships — essential for understanding unfamiliar datasets.' },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // IBM DATA ANALYST
+  // ─────────────────────────────────────────────────────────────────────────
+  { course: 'ibm', q: 'What is SQL and what are its four core CRUD operations?', a: '<strong>SQL (Structured Query Language)</strong> manages relational databases. The four CRUD operations are: <strong>SELECT</strong> (read), <strong>INSERT</strong> (create), <strong>UPDATE</strong> (modify), <strong>DELETE</strong> (remove). Every database interaction maps to one of these.' },
+  { course: 'ibm', q: 'What is the difference between WHERE and HAVING in SQL?', a: '<strong>WHERE</strong> filters rows before aggregation — it works on individual row data. <strong>HAVING</strong> filters groups after aggregation — it works on the result of GROUP BY. Example: WHERE filters raw sales; HAVING filters aggregated totals per region.' },
+  { course: 'ibm', q: 'What are the four SQL JOIN types?', a: '<strong>INNER JOIN</strong> — only matching rows from both tables. <strong>LEFT JOIN</strong> — all rows from left table + matching from right. <strong>RIGHT JOIN</strong> — all rows from right + matching from left. <strong>FULL OUTER JOIN</strong> — all rows from both, with NULLs where no match.' },
+  { course: 'ibm', q: 'What is the difference between a primary key and a foreign key?', a: 'A <strong>primary key</strong> uniquely identifies each row in a table — no duplicates, no nulls. A <strong>foreign key</strong> in one table references the primary key of another, creating a relationship between tables. Foreign keys enforce referential integrity.' },
+  { course: 'ibm', q: 'What does ETL stand for and what does each step do?', a: '<strong>Extract</strong> — pull raw data from source systems (databases, APIs, files). <strong>Transform</strong> — clean, reformat, and enrich the data to meet target schema requirements. <strong>Load</strong> — write the processed data into a data warehouse or database for analysis.' },
+  { course: 'ibm', q: 'What is the difference between a data warehouse and a data lake?', a: 'A <strong>data warehouse</strong> stores structured, processed data ready for analysis — optimized for SQL queries (e.g. Snowflake, BigQuery). A <strong>data lake</strong> stores raw data in any format — structured, semi-structured, or unstructured — at lower cost, used for big data and ML.' },
+  { course: 'ibm', q: 'What is database normalization?', a: '<strong>Normalization</strong> organizes a database to reduce data redundancy and improve integrity. It involves splitting data into related tables and using foreign keys to link them. The goal is to ensure each fact is stored in exactly one place, preventing update anomalies.' },
+  { course: 'ibm', q: 'What is the difference between a data analyst and a data scientist?', a: 'A <strong>data analyst</strong> interprets existing data to answer business questions using SQL, Excel, and visualization tools — focused on descriptive insights. A <strong>data scientist</strong> builds predictive models using machine learning and statistical methods — focused on future outcomes.' },
+  { course: 'ibm', q: 'What is a NULL value in SQL and how do you handle it?', a: 'A <strong>NULL</strong> represents a missing or unknown value — it is not zero or empty string. Handle NULLs with: <strong>IS NULL</strong> / <strong>IS NOT NULL</strong> in WHERE clauses, <strong>COALESCE()</strong> to substitute a default value, or <strong>IFNULL()</strong> / <strong>NULLIF()</strong> depending on the database.' },
+  { course: 'ibm', q: 'What is the GROUP BY clause used for in SQL?', a: '<strong>GROUP BY</strong> groups rows that share the same value in specified columns and then applies aggregate functions (SUM, COUNT, AVG, MAX, MIN) to each group. Example: <code>GROUP BY region</code> with <code>SUM(sales)</code> gives total sales per region.' },
+  { course: 'ibm', q: 'What is a subquery in SQL?', a: 'A <strong>subquery</strong> is a query nested inside another query. It runs first and its result is used by the outer query. Subqueries can appear in SELECT, FROM, or WHERE clauses. Example: find all employees earning more than the average salary.' },
+  { course: 'ibm', q: 'What is the difference between OLTP and OLAP?', a: '<strong>OLTP (Online Transaction Processing)</strong> handles high-volume, real-time transactional operations like order processing or banking. <strong>OLAP (Online Analytical Processing)</strong> is optimized for complex queries and historical analysis across large datasets — used in data warehouses and BI tools.' },
+  { course: 'ibm', q: 'What are aggregate functions in SQL? Name five.', a: '<strong>Aggregate functions</strong> perform calculations on a set of rows and return a single value. The five core ones: <strong>COUNT()</strong> — number of rows, <strong>SUM()</strong> — total, <strong>AVG()</strong> — mean, <strong>MAX()</strong> — highest value, <strong>MIN()</strong> — lowest value.' },
+  { course: 'ibm', q: 'What is an index in a database and why use it?', a: 'A database <strong>index</strong> is a data structure that speeds up row retrieval for specific columns — similar to a book index. It dramatically improves SELECT query performance on large tables. The tradeoff: indexes consume storage and slow down INSERT/UPDATE/DELETE operations.' },
+  { course: 'ibm', q: 'What is a view in SQL?', a: 'A <strong>view</strong> is a virtual table based on the result of a stored SQL query. It does not store data itself — it executes the query each time it is accessed. Views simplify complex queries, provide a consistent interface for users, and can restrict access to sensitive columns.' },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PYTHON FOR DATA ANALYTICS
+  // ─────────────────────────────────────────────────────────────────────────
+  { course: 'py', q: 'What is pandas and what are its two main data structures?', a: '<strong>Pandas</strong> is a Python library for data manipulation and analysis. Its two main structures are: <strong>DataFrame</strong> — a 2D table with labeled rows and columns (like a spreadsheet), and <strong>Series</strong> — a single labeled column. Nearly all data work in Python uses DataFrames.' },
+  { course: 'py', q: 'How do you read a CSV file into a pandas DataFrame?', a: 'Use <code>pd.read_csv("filename.csv")</code>. Common parameters: <code>sep</code> for delimiter, <code>header</code> for row number of column names, <code>index_col</code> to set a column as the index, <code>usecols</code> to load only specific columns, and <code>dtype</code> to specify column types.' },
+  { course: 'py', q: 'How do you filter rows in a pandas DataFrame?', a: 'Use boolean indexing: <code>df[df["column"] > 100]</code> returns rows where the condition is True. For multiple conditions use <code>&</code> (and) or <code>|</code> (or) with parentheses: <code>df[(df["age"] > 25) & (df["city"] == "Bangkok")]</code>.' },
+  { course: 'py', q: 'What is the difference between loc and iloc in pandas?', a: '<code>loc</code> selects rows and columns by <strong>label</strong> — uses actual index names and column names. <code>iloc</code> selects by <strong>integer position</strong> — 0-based index like a list. Example: <code>df.loc[0, "name"]</code> vs <code>df.iloc[0, 1]</code>.' },
+  { course: 'py', q: 'How do you handle missing values in pandas?', a: 'Check with <code>df.isnull().sum()</code>. Options: <code>df.dropna()</code> removes rows with any NaN, <code>df.fillna(value)</code> replaces NaN with a constant, <code>df.fillna(df.mean())</code> fills with column mean, or <code>df.interpolate()</code> for time-series data.' },
+  { course: 'py', q: 'What does groupby() do in pandas?', a: '<code>groupby()</code> splits a DataFrame into groups based on column values, then lets you apply aggregate functions to each group. Example: <code>df.groupby("region")["sales"].sum()</code> gives total sales per region. Equivalent to SQL\'s GROUP BY clause.' },
+  { course: 'py', q: 'What is NumPy and why is it important for data analytics?', a: '<strong>NumPy</strong> is a Python library for numerical computing. It provides the <strong>ndarray</strong> — a fast, memory-efficient multi-dimensional array. It is the foundation that pandas, scikit-learn, and most data science libraries are built on. NumPy operations run in optimized C code, making them far faster than Python loops.' },
+  { course: 'py', q: 'What is Matplotlib used for and what is a basic plot example?', a: '<strong>Matplotlib</strong> is Python\'s core plotting library. Basic example: <code>import matplotlib.pyplot as plt; plt.plot(x, y); plt.xlabel("X"); plt.ylabel("Y"); plt.title("Title"); plt.show()</code>. It supports line, bar, scatter, histogram, pie, and many other chart types.' },
+  { course: 'py', q: 'What is Seaborn and how does it differ from Matplotlib?', a: '<strong>Seaborn</strong> is a statistical visualization library built on Matplotlib. It provides higher-level functions for common statistical plots (heatmaps, pair plots, box plots, violin plots) with better default aesthetics. Seaborn is concise; Matplotlib is flexible and lower-level.' },
+  { course: 'py', q: 'What is a list comprehension in Python and why use it?', a: 'A <strong>list comprehension</strong> creates a new list in a single readable line: <code>[x*2 for x in range(10) if x % 2 == 0]</code>. It is more concise and often faster than a for loop. Widely used in data processing to transform or filter collections of values quickly.' },
+  { course: 'py', q: 'What does value_counts() do in pandas?', a: '<code>value_counts()</code> returns a Series with the count of each unique value in a column, sorted by frequency descending. Example: <code>df["category"].value_counts()</code>. Useful for quickly understanding the distribution of categorical data.' },
+  { course: 'py', q: 'What is the difference between merge() and concat() in pandas?', a: '<code>merge()</code> joins DataFrames based on shared key columns — like SQL JOINs. <code>concat()</code> stacks DataFrames vertically (axis=0) or horizontally (axis=1) without key matching. Use merge for relational joins, concat for combining same-structure tables.' },
+  { course: 'py', q: 'What does the describe() function do in pandas?', a: '<code>df.describe()</code> generates summary statistics for all numeric columns: <strong>count, mean, std, min, 25th percentile (Q1), median (50%), 75th percentile (Q3), max</strong>. Essential first step for understanding a dataset\'s distribution and spotting anomalies.' },
+  { course: 'py', q: 'What is a lambda function in Python?', a: 'A <strong>lambda</strong> is an anonymous one-line function: <code>lambda x: x * 2</code>. Used with <code>apply()</code> in pandas to transform columns: <code>df["price"].apply(lambda x: x * 1.07)</code> adds 7% tax to each price. Useful for simple transformations without defining a full function.' },
+  { course: 'py', q: 'What is the apply() function in pandas?', a: '<code>apply()</code> applies a function along an axis of a DataFrame — either row-by-row (axis=1) or column-by-column (axis=0). Example: <code>df["name"].apply(str.upper)</code> converts all names to uppercase. Essential for custom transformations that built-in functions cannot handle.' },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // GENERAL KNOWLEDGE — Data, Programming & Computer Science
+  // ─────────────────────────────────────────────────────────────────────────
+  { course: 'gen', q: 'What is the difference between supervised and unsupervised machine learning?', a: '<strong>Supervised learning</strong> trains a model on labeled data — the correct answer is provided (e.g. spam/not spam). <strong>Unsupervised learning</strong> finds patterns in unlabeled data without predefined answers (e.g. customer segmentation). Supervised = prediction; unsupervised = discovery.' },
+  { course: 'gen', q: 'What is Big O notation and what do O(1), O(n), and O(n²) mean?', a: '<strong>Big O notation</strong> describes how an algorithm\'s runtime scales with input size. <strong>O(1)</strong> = constant time (always same speed). <strong>O(n)</strong> = linear (doubles when input doubles). <strong>O(n²)</strong> = quadratic (4x slower when input doubles). Used to compare algorithm efficiency.' },
+  { course: 'gen', q: 'What is an API and how does a REST API work?', a: 'An <strong>API (Application Programming Interface)</strong> lets applications communicate. A <strong>REST API</strong> uses HTTP methods: <strong>GET</strong> (retrieve), <strong>POST</strong> (create), <strong>PUT/PATCH</strong> (update), <strong>DELETE</strong> (remove). Data is typically exchanged in JSON format via URLs called endpoints.' },
+  { course: 'gen', q: 'What is version control and what are the core Git commands?', a: '<strong>Version control</strong> tracks code changes over time. Core Git commands: <code>git init</code> (start repo), <code>git add</code> (stage changes), <code>git commit</code> (save snapshot), <code>git push</code> (upload to remote), <code>git pull</code> (download changes), <code>git branch</code> (manage branches).' },
+  { course: 'gen', q: 'What is the difference between a relational and non-relational database?', a: '<strong>Relational (SQL)</strong> databases store data in structured tables with fixed schemas and use SQL — great for complex queries and transactions (e.g. PostgreSQL, MySQL). <strong>Non-relational (NoSQL)</strong> store flexible data as documents, key-value pairs, or graphs — great for scale and unstructured data (e.g. MongoDB, Redis).' },
+  { course: 'gen', q: 'What is cloud computing and what are the three main service models?', a: '<strong>Cloud computing</strong> delivers computing resources over the internet on-demand. Three models: <strong>IaaS</strong> (Infrastructure as a Service — virtual machines, storage), <strong>PaaS</strong> (Platform as a Service — managed runtimes and databases), <strong>SaaS</strong> (Software as a Service — ready-to-use apps like Google Workspace).' },
+  { course: 'gen', q: 'What is the difference between RAM and storage (SSD/HDD)?', a: '<strong>RAM</strong> is temporary, fast memory that holds data actively being used — it clears when powered off. <strong>Storage</strong> (SSD/HDD) is permanent memory that persists data between sessions. More RAM allows more programs to run simultaneously; more storage holds more files and data.' },
+  { course: 'gen', q: 'What is a data model and what are the three common types?', a: 'A <strong>data model</strong> defines how data is structured, stored, and related. Three types: <strong>Conceptual</strong> — high-level overview of entities and relationships. <strong>Logical</strong> — detailed structure without implementation specifics. <strong>Physical</strong> — actual database implementation with tables and columns.' },
+  { course: 'gen', q: 'What is JSON and why is it widely used in data work?', a: '<strong>JSON (JavaScript Object Notation)</strong> is a lightweight text format for storing and exchanging data using key-value pairs and arrays. It is human-readable, language-agnostic, and natively supported by APIs, databases, and Python. Most web APIs return data as JSON.' },
+  { course: 'gen', q: 'What is the difference between a compiler and an interpreter?', a: 'A <strong>compiler</strong> translates the entire source code into machine code before execution (e.g. C++, Java). An <strong>interpreter</strong> executes code line by line at runtime (e.g. Python, R). Python is interpreted — great for interactive analysis; compiled languages run faster but require a build step.' },
+  { course: 'gen', q: 'What is open source software? Give examples relevant to data analytics.', a: '<strong>Open source software</strong> has publicly available source code that anyone can view, modify, and distribute. Key data analytics examples: <strong>Python</strong>, <strong>R</strong>, <strong>pandas</strong>, <strong>NumPy</strong>, <strong>Matplotlib</strong>, <strong>PostgreSQL</strong>, <strong>Apache Spark</strong>, <strong>Jupyter Notebook</strong>, <strong>VS Code</strong>.' },
+  { course: 'gen', q: 'What is a Jupyter Notebook and why is it popular for data analysis?', a: 'A <strong>Jupyter Notebook</strong> is an interactive document that combines live code, outputs, visualizations, and markdown text in a single file. It allows step-by-step analysis where you can run individual cells, see results immediately, and document your thinking — ideal for exploratory data analysis.' },
+  { course: 'gen', q: 'What is the difference between correlation and causation?', a: '<strong>Correlation</strong> means two variables move together — when one changes, the other tends to also. <strong>Causation</strong> means one variable directly causes a change in another. Correlation does not imply causation — ice cream sales and drowning rates both rise in summer, but ice cream does not cause drowning.' },
+  { course: 'gen', q: 'What is a data visualization and what makes one effective?', a: 'A <strong>data visualization</strong> represents data graphically to communicate patterns, trends, or comparisons. Effective ones are: <strong>accurate</strong> (not misleading), <strong>simple</strong> (minimal clutter), <strong>appropriate</strong> (right chart type for the data), and <strong>labeled</strong> (clear titles, axes, and legends).' },
+  { course: 'gen', q: 'What is the difference between a bar chart and a histogram?', a: 'A <strong>bar chart</strong> compares discrete categories — each bar represents a category (e.g. sales by country). A <strong>histogram</strong> shows the distribution of a single continuous numeric variable — bars represent value ranges (bins). Bar charts have gaps between bars; histograms do not.' },
 ]
 
 const TAG_LABELS: Record<Course, string> = {
   gda: 'Google Data Analytics',
   ibm: 'IBM Data Analyst',
-  py: 'Python',
+  py:  'Python for Analytics',
   gen: 'General Knowledge',
-  notion: 'From Notes',
 }
 
 const TAG_COLORS: Record<Course, { bg: string; color: string }> = {
-  gda:    { bg: 'var(--green-dim)',  color: 'var(--green)' },
-  ibm:    { bg: 'var(--blue-dim)',   color: 'var(--blue)' },
-  py:     { bg: 'var(--accent-dim)', color: 'var(--accent)' },
-  gen:    { bg: '#1e2a1e',           color: '#6fcf97' },
-  notion: { bg: '#1f1f2e',           color: '#8b85d4' },
+  gda: { bg: 'var(--green-dim)',  color: 'var(--green)' },
+  ibm: { bg: 'var(--blue-dim)',   color: 'var(--blue)' },
+  py:  { bg: 'var(--accent-dim)', color: 'var(--accent)' },
+  gen: { bg: '#1e2a1e',           color: '#6fcf97' },
 }
 
 export default function Home() {
@@ -120,7 +161,7 @@ export default function Home() {
   const firstName = session.user?.name?.split(' ')[0] || 'there'
 
   const filters: Array<{ key: 'all' | Course; label: string }> = [
-    { key: 'all', label: 'All Courses' },
+    { key: 'all', label: 'All' },
     { key: 'gda', label: 'Google Data Analytics' },
     { key: 'ibm', label: 'IBM Data Analyst' },
     { key: 'py',  label: 'Python' },
@@ -129,7 +170,7 @@ export default function Home() {
 
   return (
     <>
-      <Head><title>Lucas & Ava — Flashcards</title></Head>
+      <Head><title>Flashcard Study App</title></Head>
 
       {/* Top bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)', background: 'var(--surface)', position: 'sticky', top: 0, zIndex: 10 }}>
@@ -184,19 +225,19 @@ export default function Home() {
           <>
             <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '1rem' }}>Card {index + 1} of {queue.length}</div>
 
-            {/* Flashcard flip */}
+            {/* Flashcard */}
             <div onClick={() => setFlipped(f => !f)} style={{ width: '100%', maxWidth: 560, perspective: '1200px', marginBottom: '1.5rem', cursor: 'pointer' }}>
               <div style={{ position: 'relative', minHeight: 280, transformStyle: 'preserve-3d', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0)', transition: 'transform 0.5s cubic-bezier(0.4,0,0.2,1)' }}>
                 {/* Front */}
                 <div style={{ position: 'absolute', width: '100%', minHeight: 280, backfaceVisibility: 'hidden', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--card-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 2rem', textAlign: 'center' }}>
                   <div style={{ display: 'inline-block', borderRadius: 99, padding: '4px 14px', marginBottom: '1.2rem', fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', background: TAG_COLORS[card.course].bg, color: TAG_COLORS[card.course].color }}>{TAG_LABELS[card.course]}</div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.35rem', fontWeight: 600, lineHeight: 1.4, color: 'var(--text)' }}>{card.q}</div>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: 600, lineHeight: 1.45, color: 'var(--text)' }}>{card.q}</div>
                   <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '1.2rem' }}>Tap to reveal answer</div>
                 </div>
                 {/* Back */}
                 <div style={{ position: 'absolute', width: '100%', minHeight: 280, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--card-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 2rem', textAlign: 'center' }}>
                   <div style={{ display: 'inline-block', borderRadius: 99, padding: '4px 14px', marginBottom: '1.2rem', fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', background: TAG_COLORS[card.course].bg, color: TAG_COLORS[card.course].color }}>{TAG_LABELS[card.course]}</div>
-                  <div style={{ fontSize: '1rem', lineHeight: 1.7, color: '#c8c4bb', fontWeight: 300 }} dangerouslySetInnerHTML={{ __html: card.a }} />
+                  <div style={{ fontSize: '0.95rem', lineHeight: 1.75, color: '#c8c4bb', fontWeight: 300 }} dangerouslySetInnerHTML={{ __html: card.a }} />
                 </div>
               </div>
             </div>
@@ -245,7 +286,7 @@ export default function Home() {
           from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        code { background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 0.9em; font-family: monospace; color: var(--accent); }
+        code { background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 0.85em; font-family: monospace; color: var(--accent); }
         strong { color: var(--accent); font-weight: 600; }
       `}</style>
     </>
