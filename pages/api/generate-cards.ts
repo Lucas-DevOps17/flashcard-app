@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { text, category } = req.body
 
   if (!text || typeof text !== 'string' || text.trim().length < 20) {
-    return res.status(400).json({ error: 'Text too short — paste at least a sentence or two.' })
+    return res.status(400).json({ error: 'Text too short â paste at least a sentence or two.' })
   }
 
   const apiKey = process.env.GEMINI_API_KEY
@@ -26,7 +26,7 @@ Rules:
 - Questions should test understanding, not just memorization
 - Answers should be concise but complete (2-4 sentences max)
 - Use <strong> tags to highlight key terms in answers
-- Return ONLY a raw JSON array — no markdown, no backticks, no explanation, nothing else
+- Return ONLY a raw JSON array â no markdown, no backticks, no explanation, nothing else
 - The response must start with [ and end with ]
 
 Format:
@@ -66,17 +66,19 @@ ${text.trim()}`
       return res.status(500).json({ error: 'Gemini returned an empty response.' })
     }
 
-    const start = raw.indexOf('[')
-    const end = raw.lastIndexOf(']')
+    // Strip markdown code fences that some models add around JSON
+    const stripped = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim()
+    const start = stripped.indexOf('[')
+    const end = stripped.lastIndexOf(']')
 
     if (start === -1 || end === -1 || end <= start) {
-      console.error('No JSON array found. Raw:', raw.substring(0, 300))
-      return res.status(500).json({ error: 'AI did not return valid JSON. Raw: ' + raw.substring(0, 150) })
+      console.error('No JSON array found. Stripped:', stripped.substring(0, 300))
+      return res.status(500).json({ error: 'AI did not return valid JSON. Raw: ' + stripped.substring(0, 150) })
     }
 
     let cards
     try {
-      cards = JSON.parse(raw.substring(start, end + 1))
+      cards = JSON.parse(stripped.substring(start, end + 1))
     } catch (parseErr) {
       console.error('JSON parse failed:', parseErr)
       return res.status(500).json({ error: 'Failed to parse AI response as JSON.' })
