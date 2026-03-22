@@ -37,7 +37,7 @@ ${text.trim()}`
 
   try {
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,7 +59,6 @@ ${text.trim()}`
 
     const data = await geminiRes.json()
 
-    // Extract text from Gemini response
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
     if (!raw) {
@@ -67,7 +66,6 @@ ${text.trim()}`
       return res.status(500).json({ error: 'Gemini returned an empty response.' })
     }
 
-    // Find the JSON array — strip anything before [ and after ]
     const start = raw.indexOf('[')
     const end = raw.lastIndexOf(']')
 
