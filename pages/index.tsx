@@ -4,39 +4,64 @@ import { useEffect, useState, useCallback } from 'react'
 import Head from 'next/head'
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Course = 'gda' | 'ibm' | 'py' | 'notion'
+type Course = 'gda' | 'ibm' | 'py' | 'gen' | 'notion'
 type Rating = 'easy' | 'hard' | 'again'
 interface Card { course: Course; q: string; a: string }
 interface Scores { easy: number; hard: number; again: number }
 
 // ── Starter cards ──────────────────────────────────────────────────────────
 const STARTER: Card[] = [
+  // ── Google Data Analytics ─────────────────────────────────────────────
   { course: 'gda', q: 'What are the 6 phases of the data analysis process?', a: '<strong>Ask → Prepare → Process → Analyze → Share → Act.</strong> Each phase builds on the previous: Ask defines the problem, Prepare gathers data, Process cleans it, Analyze finds patterns, Share communicates insights, Act implements decisions.' },
   { course: 'gda', q: 'What is the difference between structured and unstructured data?', a: '<strong>Structured data</strong> is organized in rows and columns (like spreadsheets or databases). <strong>Unstructured data</strong> has no predefined format — emails, images, videos, and social media posts are examples.' },
   { course: 'gda', q: 'What does SMART stand for in data analysis questions?', a: '<strong>S</strong>pecific, <strong>M</strong>easurable, <strong>A</strong>ction-oriented, <strong>R</strong>elevant, <strong>T</strong>ime-bound. SMART questions help analysts stay focused and lead to useful, actionable insights.' },
   { course: 'gda', q: 'What is data bias and why does it matter?', a: 'Data bias is when data is collected in a way that skews results. It matters because biased data leads to <strong>wrong conclusions</strong>. Common types: sampling bias, observer bias, confirmation bias.' },
   { course: 'gda', q: 'What is the difference between a metric and a dimension?', a: '<strong>Metrics</strong> are measurable, quantitative values (sales revenue, click rate). <strong>Dimensions</strong> are qualitative attributes used to categorize data (country, product category, date). Dimensions slice; metrics measure.' },
   { course: 'gda', q: 'What is data integrity?', a: 'Data integrity means data is <strong>accurate, complete, consistent, and trustworthy</strong> throughout its lifecycle. Without integrity, analysis results cannot be relied upon for decisions.' },
+
+  // ── IBM Data Analyst ──────────────────────────────────────────────────
   { course: 'ibm', q: 'What is the difference between a data analyst and a data scientist?', a: 'A <strong>data analyst</strong> focuses on interpreting existing data to answer business questions. A <strong>data scientist</strong> builds predictive models and works with more complex algorithms. Analysts describe; scientists predict.' },
   { course: 'ibm', q: 'What is SQL and what are its four main operations?', a: '<strong>SQL</strong> (Structured Query Language) manages relational databases. The four main operations are <strong>SELECT</strong> (read), <strong>INSERT</strong> (create), <strong>UPDATE</strong> (modify), <strong>DELETE</strong> (remove) — together called CRUD.' },
   { course: 'ibm', q: 'What is the purpose of a JOIN in SQL?', a: 'A <strong>JOIN</strong> combines rows from two or more tables based on a related column. Types: <strong>INNER JOIN</strong> (matching rows only), <strong>LEFT JOIN</strong> (all left + matching right), <strong>RIGHT JOIN</strong>, <strong>FULL OUTER JOIN</strong>.' },
   { course: 'ibm', q: 'What is a primary key vs a foreign key?', a: 'A <strong>primary key</strong> uniquely identifies each row in a table (no duplicates, no nulls). A <strong>foreign key</strong> in one table references the primary key of another table, creating a relationship between them.' },
   { course: 'ibm', q: 'What does ETL stand for in data work?', a: '<strong>Extract, Transform, Load.</strong> ETL is the process of pulling data from source systems, cleaning/transforming it into the right format, and loading it into a data warehouse or database for analysis.' },
+
+  // ── Python for Everybody ──────────────────────────────────────────────
   { course: 'py', q: 'What is the difference between a list and a tuple in Python?', a: 'A <strong>list</strong> is mutable (can be changed): <code>[ ]</code>. A <strong>tuple</strong> is immutable (cannot be changed): <code>( )</code>. Use tuples for fixed data that should not be modified, like coordinates.' },
   { course: 'py', q: 'What does len() do in Python?', a: '<code>len()</code> returns the <strong>number of items</strong> in an object. Works on strings, lists, tuples, dictionaries, and more. Example: <code>len("hello")</code> returns <strong>5</strong>.' },
   { course: 'py', q: 'What is a for loop and how does it work in Python?', a: 'A <strong>for loop</strong> iterates over a sequence. Example: <code>for item in my_list:</code> runs the indented block once for each item. Use <code>range(n)</code> to loop n times.' },
   { course: 'py', q: 'What is a dictionary in Python?', a: 'A <strong>dictionary</strong> stores key-value pairs: <code>{"name": "Lucas", "age": 30}</code>. Keys must be unique. Access values with <code>dict["key"]</code>. Very useful for structured data.' },
   { course: 'py', q: 'What does the import statement do?', a: '<code>import</code> brings in external <strong>libraries/modules</strong> so you can use their functions. Example: <code>import pandas as pd</code> lets you use pandas functions as <code>pd.read_csv()</code>.' },
   { course: 'py', q: 'What is pandas used for in Python?', a: '<strong>Pandas</strong> is a library for data manipulation and analysis. Key objects: <code>DataFrame</code> (table), <code>Series</code> (column). Common operations: reading CSV, filtering rows, grouping, merging datasets.' },
+
+  // ── General Knowledge ─────────────────────────────────────────────────
+  { course: 'gen', q: 'What is the difference between RAM and storage?', a: '<strong>RAM (Random Access Memory)</strong> is temporary memory your computer uses while running programs — it clears when powered off. <strong>Storage</strong> (SSD/HDD) is permanent memory that holds your files and OS even when off.' },
+  { course: 'gen', q: 'What is an API?', a: 'An <strong>API (Application Programming Interface)</strong> is a set of rules that lets two applications talk to each other. Example: when a weather app fetches forecast data, it uses a weather service\'s API behind the scenes.' },
+  { course: 'gen', q: 'What is the difference between the internet and the web?', a: 'The <strong>internet</strong> is the global network infrastructure connecting billions of devices. The <strong>web (World Wide Web)</strong> is one service that runs on the internet — the system of websites accessed via browsers.' },
+  { course: 'gen', q: 'What is machine learning in simple terms?', a: '<strong>Machine learning</strong> is a type of AI where computers learn patterns from data instead of being explicitly programmed with rules. Example: a spam filter learns what spam looks like from millions of email examples.' },
+  { course: 'gen', q: 'What is version control and why is it important?', a: '<strong>Version control</strong> (e.g. Git) tracks every change made to code over time. It lets developers revert mistakes, work on separate features in parallel, and collaborate without overwriting each other\'s work.' },
+  { course: 'gen', q: 'What is the difference between a compiler and an interpreter?', a: 'A <strong>compiler</strong> translates all source code to machine code before running (e.g. C++). An <strong>interpreter</strong> executes code line by line at runtime (e.g. Python). Compiled programs are faster; interpreted ones are more flexible.' },
+  { course: 'gen', q: 'What is Big O notation?', a: '<strong>Big O notation</strong> describes how an algorithm\'s runtime or space grows as input size increases. <strong>O(1)</strong> = constant, <strong>O(n)</strong> = linear, <strong>O(n²)</strong> = quadratic. It helps compare algorithm efficiency.' },
+  { course: 'gen', q: 'What is the difference between a relational and non-relational database?', a: '<strong>Relational (SQL)</strong> stores data in structured tables with fixed schemas — great for complex queries. <strong>Non-relational (NoSQL)</strong> stores flexible data (documents, key-value pairs) — great for scale and unstructured data.' },
+  { course: 'gen', q: 'What does CPU stand for and what does it do?', a: '<strong>CPU (Central Processing Unit)</strong> is the brain of a computer — it executes all program instructions. Speed is measured in GHz. More cores allow better multitasking. The GPU handles graphics and parallel computing separately.' },
+  { course: 'gen', q: 'What is open source software?', a: '<strong>Open source software</strong> has publicly available source code that anyone can view, modify, and distribute. Examples: Linux, Python, React, VS Code. The opposite is <strong>proprietary/closed source</strong> software like Windows or Photoshop.' },
+  { course: 'gen', q: 'What is the difference between frontend and backend development?', a: '<strong>Frontend</strong> is everything the user sees and interacts with (HTML, CSS, JavaScript, React). <strong>Backend</strong> is the server-side logic, databases, and APIs that the frontend calls. Full-stack developers work on both.' },
+  { course: 'gen', q: 'What is cloud computing?', a: '<strong>Cloud computing</strong> means using servers, storage, and services hosted on the internet instead of your local machine. Providers like AWS, Google Cloud, and Azure let you rent computing power and only pay for what you use.' },
 ]
 
 const TAG_LABELS: Record<Course, string> = {
-  gda: 'Google Data Analytics', ibm: 'IBM Data Analyst', py: 'Python', notion: 'From Notes',
+  gda: 'Google Data Analytics',
+  ibm: 'IBM Data Analyst',
+  py: 'Python',
+  gen: 'General Knowledge',
+  notion: 'From Notes',
 }
+
 const TAG_COLORS: Record<Course, { bg: string; color: string }> = {
   gda:    { bg: 'var(--green-dim)',  color: 'var(--green)' },
   ibm:    { bg: 'var(--blue-dim)',   color: 'var(--blue)' },
   py:     { bg: 'var(--accent-dim)', color: 'var(--accent)' },
+  gen:    { bg: '#1e2a1e',           color: '#6fcf97' },
   notion: { bg: '#1f1f2e',           color: '#8b85d4' },
 }
 
@@ -57,12 +82,10 @@ export default function Home() {
   const [genLoading, setGenLoading] = useState(false)
   const [toast, setToast] = useState('')
 
-  // Redirect if not logged in
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login')
   }, [status, router])
 
-  // Build queue on filter or allCards change
   const buildQueue = useCallback(() => {
     const filtered = filter === 'all' ? allCards : allCards.filter(c => c.course === filter)
     setQueue([...filtered].sort(() => Math.random() - 0.5))
@@ -74,7 +97,6 @@ export default function Home() {
 
   useEffect(() => { buildQueue() }, [buildQueue])
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'TEXTAREA') return
@@ -120,7 +142,9 @@ export default function Home() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      const newCards: Card[] = data.cards.filter((c: any) => c.q && c.a).map((c: any) => ({ ...c, course: 'notion' as Course }))
+      const newCards: Card[] = data.cards
+        .filter((c: any) => c.q && c.a)
+        .map((c: any) => ({ ...c, course: 'notion' as Course }))
       setAllCards(prev => [...prev, ...newCards])
       setGenText('')
       setGenStatus(`✅ ${newCards.length} new cards added!`)
@@ -137,6 +161,14 @@ export default function Home() {
   const card = queue[index]
   const progress = queue.length ? (index / queue.length) * 100 : 0
   const firstName = session.user?.name?.split(' ')[0] || 'there'
+
+  const filters: Array<{ key: 'all' | Course; label: string }> = [
+    { key: 'all', label: 'All Courses' },
+    { key: 'gda', label: 'Google Data Analytics' },
+    { key: 'ibm', label: 'IBM Data Analyst' },
+    { key: 'py', label: 'Python' },
+    { key: 'gen', label: 'General Knowledge' },
+  ]
 
   return (
     <>
@@ -175,18 +207,18 @@ export default function Home() {
 
         {/* Filter tabs */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          {(['all', 'gda', 'ibm', 'py'] as const).map(f => (
-            <button key={f}
-              onClick={() => setFilter(f)}
+          {filters.map(f => (
+            <button key={f.key}
+              onClick={() => setFilter(f.key)}
               style={{
                 padding: '7px 16px', borderRadius: '99px', fontSize: '12px', fontWeight: 500,
-                border: `1px solid ${filter === f ? 'var(--accent)' : 'var(--border)'}`,
-                background: filter === f ? 'var(--accent)' : 'var(--surface)',
-                color: filter === f ? '#0f0e0c' : 'var(--muted)',
+                border: `1px solid ${filter === f.key ? 'var(--accent)' : 'var(--border)'}`,
+                background: filter === f.key ? 'var(--accent)' : 'var(--surface)',
+                color: filter === f.key ? '#0f0e0c' : 'var(--muted)',
                 transition: 'all 0.2s',
               }}
             >
-              {f === 'all' ? 'All Courses' : TAG_LABELS[f]}
+              {f.label}
             </button>
           ))}
         </div>
@@ -274,14 +306,14 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Rating buttons (only after flip) */}
+            {/* Rating buttons — only after flip */}
             {flipped ? (
               <div style={{ display: 'flex', gap: '12px', marginBottom: '1.5rem' }}>
                 {([
-                  { r: 'again', emoji: '😓', label: 'Again', hoverBg: 'var(--red-dim)', hoverColor: 'var(--red)' },
-                  { r: 'hard',  emoji: '🤔', label: 'Hard',  hoverBg: 'var(--accent-dim)', hoverColor: 'var(--accent)' },
-                  { r: 'easy',  emoji: '✅', label: 'Easy',  hoverBg: 'var(--green-dim)', hoverColor: 'var(--green)' },
-                ] as const).map(btn => (
+                  { r: 'again' as Rating, emoji: '😓', label: 'Again', hoverBg: 'var(--red-dim)',    hoverColor: 'var(--red)' },
+                  { r: 'hard'  as Rating, emoji: '🤔', label: 'Hard',  hoverBg: 'var(--accent-dim)', hoverColor: 'var(--accent)' },
+                  { r: 'easy'  as Rating, emoji: '✅', label: 'Easy',  hoverBg: 'var(--green-dim)',  hoverColor: 'var(--green)' },
+                ]).map(btn => (
                   <button
                     key={btn.r}
                     onClick={() => rate(btn.r)}
@@ -291,8 +323,16 @@ export default function Home() {
                       border: '1px solid var(--border)', background: 'var(--surface)',
                       fontSize: '13px', fontWeight: 500, color: 'var(--muted)', transition: 'all 0.2s',
                     }}
-                    onMouseOver={e => { e.currentTarget.style.background = btn.hoverBg; e.currentTarget.style.color = btn.hoverColor; e.currentTarget.style.borderColor = btn.hoverColor }}
-                    onMouseOut={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+                    onMouseOver={e => {
+                      e.currentTarget.style.background = btn.hoverBg
+                      e.currentTarget.style.color = btn.hoverColor
+                      e.currentTarget.style.borderColor = btn.hoverColor
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.background = 'var(--surface)'
+                      e.currentTarget.style.color = 'var(--muted)'
+                      e.currentTarget.style.borderColor = 'var(--border)'
+                    }}
                   >
                     <span style={{ fontSize: '1.4rem' }}>{btn.emoji}</span>
                     {btn.label}
@@ -338,7 +378,10 @@ export default function Home() {
           width: '100%', maxWidth: 560, background: 'var(--surface)',
           border: '1px solid var(--border)', borderRadius: 16, padding: 20, marginTop: 8,
         }}>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+          <div style={{
+            fontSize: '12px', fontWeight: 500, color: 'var(--muted)',
+            textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12,
+          }}>
             ✨ Generate from your Notion notes
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -370,7 +413,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Toast */}
+      {/* Toast notification */}
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
@@ -386,9 +429,13 @@ export default function Home() {
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         code {
-          background: var(--card-bg); border: 1px solid var(--border);
-          border-radius: 4px; padding: 1px 5px; font-size: 0.9em;
-          font-family: monospace; color: var(--accent);
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 4px;
+          padding: 1px 5px;
+          font-size: 0.9em;
+          font-family: monospace;
+          color: var(--accent);
         }
         strong { color: var(--accent); font-weight: 600; }
       `}</style>
