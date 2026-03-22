@@ -11,9 +11,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Text too short — paste at least a sentence or two.' })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY is not configured on the server.' })
+    return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' })
   }
 
   const categoryLabel = category || 'General Knowledge'
@@ -27,8 +27,7 @@ Rules:
 - Answers should be concise but complete (2-4 sentences max)
 - Use <strong> tags to highlight key terms in answers
 - Return ONLY a raw JSON array — no markdown, no backticks, no explanation, nothing else
-
-The response must start with [ and end with ]
+- The response must start with [ and end with ]
 
 Format:
 [{"q": "question text here", "a": "answer with <strong>key terms</strong> highlighted"}, ...]
@@ -37,38 +36,38 @@ Study notes to turn into flashcards:
 ${text.trim()}`
 
   try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024,
+          },
+        }),
+      }
+    )
 
-    if (!anthropicRes.ok) {
-      const errBody = await anthropicRes.text()
-      console.error('Anthropic API error:', anthropicRes.status, errBody)
-      return res.status(500).json({ error: `Anthropic API error ${anthropicRes.status}: ${errBody.substring(0, 200)}` })
+    if (!geminiRes.ok) {
+      const errBody = await geminiRes.text()
+      console.error('Gemini API error:', geminiRes.status, errBody)
+      return res.status(500).json({ error: `Gemini API error ${geminiRes.status}: ${errBody.substring(0, 200)}` })
     }
 
-    const data = await anthropicRes.json()
+    const data = await geminiRes.json()
 
-    if (data.error) {
-      console.error('Anthropic returned error:', JSON.stringify(data.error))
-      return res.status(500).json({ error: data.error.message || JSON.stringify(data.error) })
+    // Extract text from Gemini response
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+    if (!raw) {
+      console.error('Empty Gemini response:', JSON.stringify(data))
+      return res.status(500).json({ error: 'Gemini returned an empty response.' })
     }
 
-    const raw = (data.content || [])
-      .map((block: { type: string; text?: string }) => (block.type === 'text' ? block.text || '' : ''))
-      .join('')
-      .trim()
-
+    // Find the JSON array — strip anything before [ and after ]
     const start = raw.indexOf('[')
     const end = raw.lastIndexOf(']')
 
@@ -96,6 +95,10 @@ ${text.trim()}`
         typeof (c as Record<string, unknown>).q === 'string' &&
         typeof (c as Record<string, unknown>).a === 'string'
     )
+
+    if (validCards.length === 0) {
+      return res.status(500).json({ error: 'No valid cards found in AI response.' })
+    }
 
     return res.status(200).json({ cards: validCards, category: categoryLabel })
   } catch (err: unknown) {
