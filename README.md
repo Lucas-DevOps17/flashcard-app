@@ -1,54 +1,63 @@
-# Lucas & Ava — Flashcard App 🃏
+# Flashcard Study App 🃏
 
-A private flashcard study app for Lucas and Ava. Built with Next.js and Google OAuth — only the two of them can log in.
+A private, authenticated flashcard web app built with Next.js and Google OAuth. Only authorized users can sign in and access the flashcard deck.
 
-## What it does
+![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)
 
-- **Flashcard review** across 4 course categories with flip animation
+## Features
+
+- **Flashcard review** across multiple subject categories with a smooth flip animation
 - **Spaced repetition rating** — mark each card as 😓 Again / 🤔 Hard / ✅ Easy
-- **Filter by course** — study all cards or focus on one category
-- **Session stats** — track your Easy, Hard, and Review counts per session
-- **Keyboard shortcuts** — Space/Enter to flip, 1/2/3 to rate, → to skip
-- **Google OAuth** — only `aungkomyat.lucas@gmail.com` and `ava.khinyadanarkyaw@gmail.com` can sign in
+- **Filter by category** — study all cards or focus on a specific subject
+- **Session stats** — track Easy, Hard, and Review counts per session
+- **Keyboard shortcuts** — `Space` / `Enter` to flip, `1` / `2` / `3` to rate, `→` to skip
+- **Google OAuth** — private access with an email allowlist via NextAuth.js
 
-## Flashcard categories
+## Tech Stack
 
-| Course | Cards |
-|---|---|
-| Google Data Analytics | 6 |
-| IBM Data Analyst | 5 |
-| Python for Everybody | 6 |
-| General Knowledge | 12 |
+- [Next.js 14](https://nextjs.org/) — React framework with Pages Router
+- [NextAuth.js](https://next-auth.js.org/) — Google OAuth authentication with email allowlist
+- [TypeScript](https://www.typescriptlang.org/) — type-safe throughout
+- [Vercel](https://vercel.com/) — hosting and CI/CD
 
-## Tech stack
-
-- **Next.js 14** (Pages Router, TypeScript)
-- **NextAuth.js** — Google OAuth with email allowlist
-- **Vercel** — hosting and deployment
-- **Google Calendar** — study sessions scheduled for both accounts
-
-## Project structure
+## Project Structure
 
 ```
 flashcard-app/
 ├── pages/
-│   ├── index.tsx              ← main flashcard app (protected)
-│   ├── login.tsx              ← Google sign-in page
-│   ├── unauthorized.tsx       ← shown for non-allowed emails
-│   ├── _app.tsx               ← session provider
+│   ├── index.tsx              # Main flashcard app (protected route)
+│   ├── login.tsx              # Google sign-in page
+│   ├── unauthorized.tsx       # Shown for non-allowed emails
+│   ├── _app.tsx               # NextAuth session provider
 │   └── api/
 │       └── auth/
-│           └── [...nextauth].ts  ← Google OAuth handler
+│           └── [...nextauth].ts  # Google OAuth handler
 ├── styles/
 │   └── globals.css
-├── .env.example               ← env template (safe to commit)
-├── .gitignore
-└── README.md
+├── .env.example               # Environment variable template
+└── next.config.js
 ```
 
-## Environment variables
+## Getting Started
 
-Copy `.env.example` to `.env.local` and fill in all values:
+### Prerequisites
+
+- Node.js 18+
+- A [Google Cloud](https://console.cloud.google.com/) project with OAuth 2.0 credentials
+
+### Installation
+
+```bash
+git clone https://github.com/your-username/flashcard-app.git
+cd flashcard-app
+npm install
+```
+
+### Environment Variables
+
+Copy the example file and fill in your values:
 
 ```bash
 cp .env.example .env.local
@@ -56,57 +65,55 @@ cp .env.example .env.local
 
 | Variable | Description |
 |---|---|
-| `GOOGLE_CLIENT_ID` | From Google Cloud Console → OAuth 2.0 Client IDs |
-| `GOOGLE_CLIENT_SECRET` | From Google Cloud Console → OAuth 2.0 Client IDs |
-| `NEXTAUTH_SECRET` | Generate with: `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | `http://localhost:3000` locally, your Vercel URL in production |
-| `ALLOWED_EMAILS` | Comma-separated list of allowed Gmail addresses |
+| `GOOGLE_CLIENT_ID` | OAuth 2.0 Client ID from Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | OAuth 2.0 Client Secret from Google Cloud Console |
+| `NEXTAUTH_SECRET` | Random secret — generate with `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | `http://localhost:3000` for local dev |
+| `ALLOWED_EMAILS` | Comma-separated list of Gmail addresses allowed to sign in |
 
-## Local development
+### Setting Up Google OAuth
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
+2. Create an **OAuth 2.0 Client ID** → Web application
+3. Add authorized redirect URIs:
+   - `http://localhost:3000/api/auth/callback/google` (local)
+   - `https://your-app.vercel.app/api/auth/callback/google` (production)
+4. Copy the Client ID and Client Secret into your `.env.local`
+
+### Run Locally
 
 ```bash
-npm install
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000)
 
 ## Deploying to Vercel
 
-1. Push to GitHub
-2. Import the repo at [vercel.com/new](https://vercel.com/new)
-3. Add all environment variables in Vercel's dashboard
-4. Set `NEXTAUTH_URL` to your production URL (e.g. `https://flashcard-app.vercel.app`)
-5. Add the production redirect URI in Google Cloud Console:
-   ```
-   https://your-app.vercel.app/api/auth/callback/google
-   ```
+1. Push your repo to GitHub
+2. Import it at [vercel.com/new](https://vercel.com/new)
+3. Add all environment variables in the Vercel dashboard
+4. Update `NEXTAUTH_URL` to your production URL
+5. Add the production redirect URI to your Google Cloud OAuth app
 
-## Setting up Google OAuth
+## Flashcard Categories
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a project → APIs & Services → Credentials
-3. Create OAuth 2.0 Client ID → Web application
-4. Add authorized redirect URIs:
-   - `http://localhost:3000/api/auth/callback/google`
-   - `https://your-app.vercel.app/api/auth/callback/google`
-5. Copy the Client ID and Client Secret into your `.env.local`
+The app ships with built-in starter cards across four categories:
 
-## Study schedule
-
-Lucas and Ava study every weekday 5:00–7:00 PM (Asia/Bangkok):
-
-| Day | Course |
+| Category | Description |
 |---|---|
-| Monday | Google Data Analytics |
-| Tuesday | IBM Data Analyst |
-| Wednesday | Python for Everybody |
-| Thursday | Google Data Analytics |
-| Friday | Python for Everybody |
+| Google Data Analytics | Data analysis process, metrics, bias, integrity |
+| IBM Data Analyst | SQL, ETL, joins, keys, analyst vs scientist |
+| Python for Everybody | Lists, loops, dictionaries, pandas, imports |
+| General Knowledge | APIs, cloud, version control, Big O, CPU, OSS |
 
-Sessions run from **24 March → 23 May 2026** and are synced to both Google Calendars.
+## How It Works
 
-## Notion workspace
+- Only emails listed in `ALLOWED_EMAILS` can sign in via Google
+- All other Google accounts are redirected to an unauthorized page
+- Cards are rated per session — "Again" cards re-enter the queue
+- Sessions reset on page refresh (no backend persistence by design)
 
-Study notes, session tracker, and resources are organized at:
-[Lucas & Ava — Study Space](https://www.notion.so/32b84e28f2b78164b39de77b607db149)
+## License
+
+MIT
