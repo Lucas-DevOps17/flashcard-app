@@ -1,57 +1,106 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getServerSession } from 'next-auth'
-import { authOptions } from './auth/[...nextauth]'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
 
-  const session = await getServerSession(req, res, authOptions)
-  if (!session) return res.status(401).json({ error: 'Unauthorized' })
+  const { text, category } = req.body
 
-  const { text } = req.body
-  if (!text || text.length < 20) return res.status(400).json({ error: 'Text too short' })
+  if (!text || typeof text !== 'string' || text.trim().length < 20) {
+    return res.status(400).json({ error: 'Text too short — paste at least a sentence or two.' })
+  }
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: `You are a flashcard generator for data analytics and Python students.
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY is not configured on the server.' })
+  }
+
+  const categoryLabel = category || 'General Knowledge'
+
+  const prompt = `You are a flashcard generator for data analytics and Python students.
 Read the following study notes and generate 5 high-quality flashcard question/answer pairs.
+These cards are for the category: ${categoryLabel}
 
 Rules:
 - Questions should test understanding, not just memorization
 - Answers should be concise but complete (2-4 sentences max)
-- Use <strong> tags for key terms in answers
-- Return ONLY a valid JSON array, no markdown, no backticks, no preamble
+- Use <strong> tags to highlight key terms in answers
+- Return ONLY a raw JSON array — no markdown, no backticks, no explanation, nothing else
 
-Format exactly like this:
-[{"q": "question text", "a": "answer with <strong>key terms</strong>"}, ...]
+The response must start with [ and end with ]
 
-Study notes:
-${text}`,
-        }],
+Format:
+[{"q": "question text here", "a": "answer with <strong>key terms</strong> highlighted"}, ...]
+
+Study notes to turn into flashcards:
+${text.trim()}`
+
+  try {
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
       }),
     })
 
-    const data = await response.json()
-    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error))
+    if (!anthropicRes.ok) {
+      const errBody = await anthropicRes.text()
+      console.error('Anthropic API error:', anthropicRes.status, errBody)
+      return res.status(500).json({ error: `Anthropic API error ${anthropicRes.status}: ${errBody.substring(0, 200)}` })
+    }
 
-    const raw = (data.content || []).map((b) => b.text || '').join('')
-    const jsonMatch = raw.match(/\[.*\]/s)
-    if (!jsonMatch) throw new Error('No JSON array in response: ' + raw.substring(0, 200))
-    const cards = JSON.parse(jsonMatch[0])
-    return res.status(200).json({ cards })
-  } catch (err) {
-    console.error('Generate cards error:', err.message)
-    return res.status(500).json({ error: err.message || 'Generation failed' })
+    const data = await anthropicRes.json()
+
+    if (data.error) {
+      console.error('Anthropic returned error:', JSON.stringify(data.error))
+      return res.status(500).json({ error: data.error.message || JSON.stringify(data.error) })
+    }
+
+    const raw = (data.content || [])
+      .map((block: { type: string; text?: string }) => (block.type === 'text' ? block.text || '' : ''))
+      .join('')
+      .trim()
+
+    const start = raw.indexOf('[')
+    const end = raw.lastIndexOf(']')
+
+    if (start === -1 || end === -1 || end <= start) {
+      console.error('No JSON array found. Raw:', raw.substring(0, 300))
+      return res.status(500).json({ error: 'AI did not return valid JSON. Raw: ' + raw.substring(0, 150) })
+    }
+
+    let cards
+    try {
+      cards = JSON.parse(raw.substring(start, end + 1))
+    } catch (parseErr) {
+      console.error('JSON parse failed:', parseErr)
+      return res.status(500).json({ error: 'Failed to parse AI response as JSON.' })
+    }
+
+    if (!Array.isArray(cards) || cards.length === 0) {
+      return res.status(500).json({ error: 'AI returned an empty cards array.' })
+    }
+
+    const validCards = cards.filter(
+      (c: unknown) =>
+        c !== null &&
+        typeof c === 'object' &&
+        typeof (c as Record<string, unknown>).q === 'string' &&
+        typeof (c as Record<string, unknown>).a === 'string'
+    )
+
+    return res.status(200).json({ cards: validCards, category: categoryLabel })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error('Generate cards handler error:', message)
+    return res.status(500).json({ error: message })
   }
 }
