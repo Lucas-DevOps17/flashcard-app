@@ -50,7 +50,7 @@ GOOGLE_CLIENT_ID=<your client id>
 GOOGLE_CLIENT_SECRET=<your client secret>
 NEXTAUTH_SECRET=<generated secret>
 NEXTAUTH_URL=http://localhost:3000
-ALLOWED_EMAILS=aungkomyat.lucas@gmail.com,ava.khinyadanarkyaw@gmail.com
+ALLOWED_EMAILS=example1@gmail.com,example2@gmail.com
 ANTHROPIC_API_KEY=<your api key>
 ```
 
