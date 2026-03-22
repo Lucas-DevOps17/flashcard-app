@@ -60,29 +60,17 @@ const TAG_COLORS: Record<Course, { bg: string; color: string }> = {
   notion: { bg: '#1f1f2e',           color: '#8b85d4' },
 }
 
-const CATEGORY_OPTIONS: Array<{ value: string; label: string; course: Course }> = [
-  { value: 'gda', label: 'Google Data Analytics', course: 'gda' },
-  { value: 'ibm', label: 'IBM Data Analyst',       course: 'ibm' },
-  { value: 'py',  label: 'Python for Everybody',   course: 'py'  },
-  { value: 'gen', label: 'General Knowledge',      course: 'gen' },
-]
-
 export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
-  const [allCards, setAllCards] = useState<Card[]>(STARTER)
+  const [allCards] = useState<Card[]>(STARTER)
   const [filter, setFilter] = useState<'all' | Course>('all')
   const [queue, setQueue] = useState<Card[]>([])
   const [index, setIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [scores, setScores] = useState<Scores>({ easy: 0, hard: 0, again: 0 })
   const [done, setDone] = useState(false)
-  const [genText, setGenText] = useState('')
-  const [genCategory, setGenCategory] = useState('gda')
-  const [genStatus, setGenStatus] = useState('')
-  const [genLoading, setGenLoading] = useState(false)
-  const [toast, setToast] = useState('')
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login')
@@ -101,7 +89,7 @@ export default function Home() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).tagName === 'TEXTAREA' || (e.target as HTMLElement).tagName === 'SELECT') return
+      if ((e.target as HTMLElement).tagName === 'TEXTAREA') return
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setFlipped(f => !f) }
       if (e.key === 'ArrowRight') advance()
       if (e.key === '1' && flipped) rate('again')
@@ -123,46 +111,6 @@ export default function Home() {
     setScores(s => ({ ...s, [r]: s[r] + 1 }))
     if (r === 'again') setQueue(q => { const c = [...q]; c.push(c[index]); return c })
     advance()
-  }
-
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3000)
-  }
-
-  const generateCards = async () => {
-    if (!genText || genText.trim().length < 20) {
-      setGenStatus('⚠️ Please paste some study text first.')
-      return
-    }
-    setGenLoading(true)
-    setGenStatus('🤖 Generating flashcards from your notes...')
-    const selectedOption = CATEGORY_OPTIONS.find(o => o.value === genCategory)
-    const categoryLabel = selectedOption?.label || 'General Knowledge'
-    try {
-      const res = await fetch('/api/generate-cards', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: genText.trim(), category: categoryLabel }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setGenStatus('❌ ' + (data.error || 'Generation failed. Try again.'))
-        return
-      }
-      const course = selectedOption?.course || 'notion' as Course
-      const newCards: Card[] = data.cards
-        .filter((c: { q?: unknown; a?: unknown }) => c.q && c.a)
-        .map((c: { q: string; a: string }) => ({ q: c.q, a: c.a, course }))
-      setAllCards(prev => [...prev, ...newCards])
-      setGenText('')
-      setGenStatus(`✅ ${newCards.length} cards added to ${categoryLabel}!`)
-      showToast(`${newCards.length} new ${categoryLabel} cards created! 🎉`)
-    } catch {
-      setGenStatus('❌ Network error. Check your connection and try again.')
-    } finally {
-      setGenLoading(false)
-    }
   }
 
   if (status === 'loading' || !session) return null
@@ -194,8 +142,9 @@ export default function Home() {
           <button onClick={() => signOut({ callbackUrl: '/login' })}
             style={{ padding: '5px 14px', borderRadius: '99px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: '12px', transition: 'all 0.2s' }}
             onMouseOver={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--muted)' }}
-            onMouseOut={e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
-          >Sign out</button>
+            onMouseOut={e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}>
+            Sign out
+          </button>
         </div>
       </div>
 
@@ -289,55 +238,12 @@ export default function Home() {
             </button>
           </div>
         ) : null}
-
-        {/* ── Generate Panel ── */}
-        <div style={{ width: '100%', maxWidth: 560, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, marginTop: 8 }}>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
-            ✨ Generate cards from your Notion notes
-          </div>
-
-          {/* Category selector */}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: 6 }}>Add cards to which course?</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {CATEGORY_OPTIONS.map(opt => (
-                <button key={opt.value} onClick={() => setGenCategory(opt.value)}
-                  style={{ padding: '5px 12px', borderRadius: 99, fontSize: '11px', fontWeight: 500, border: `1px solid ${genCategory === opt.value ? TAG_COLORS[opt.course].color : 'var(--border)'}`, background: genCategory === opt.value ? TAG_COLORS[opt.course].bg : 'transparent', color: genCategory === opt.value ? TAG_COLORS[opt.course].color : 'var(--muted)', transition: 'all 0.15s', cursor: 'pointer' }}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Textarea + button */}
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <textarea value={genText} onChange={e => setGenText(e.target.value)}
-              placeholder={`Paste your ${CATEGORY_OPTIONS.find(o => o.value === genCategory)?.label || ''} notes here...`}
-              style={{ flex: 1, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text)', resize: 'vertical', minHeight: 80, outline: 'none', fontFamily: 'Outfit, sans-serif' }} />
-            <button onClick={generateCards} disabled={genLoading}
-              style={{ padding: '10px 18px', borderRadius: 10, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#0f0e0c', fontSize: 13, fontWeight: 600, opacity: genLoading ? 0.5 : 1, flexShrink: 0, transition: 'opacity 0.2s' }}>
-              {genLoading ? '...' : 'Generate'}
-            </button>
-          </div>
-
-          {genStatus && (
-            <div style={{ fontSize: 12, color: genStatus.startsWith('❌') ? 'var(--red)' : genStatus.startsWith('✅') ? 'var(--green)' : 'var(--muted)', marginTop: 8 }}>
-              {genStatus}
-            </div>
-          )}
-        </div>
       </main>
-
-      {toast && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'var(--text)', color: 'var(--bg)', padding: '10px 22px', borderRadius: 99, fontSize: 13, zIndex: 100, animation: 'fadeUp 0.3s ease' }}>
-          {toast}
-        </div>
-      )}
 
       <style>{`
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateX(-50%) translateY(16px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
         code { background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 0.9em; font-family: monospace; color: var(--accent); }
         strong { color: var(--accent); font-weight: 600; }
