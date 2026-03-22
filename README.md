@@ -35,8 +35,8 @@ openssl rand -base64 32
 ```
 Copy the output — this is your `NEXTAUTH_SECRET`.
 
-### 4. Get your Anthropic API key
-Go to [console.anthropic.com](https://console.anthropic.com/) → API Keys → Create Key.
+### 4. Get your Gemini API key
+Go to https://aistudio.google.com/  → Get API Keys → Create Key.
 
 ### 5. Fill in .env.local
 Copy `.env.example` to `.env.local` and fill in all values:
